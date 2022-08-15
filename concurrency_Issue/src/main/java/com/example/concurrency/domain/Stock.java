@@ -2,10 +2,7 @@ package com.example.concurrency.domain;
 
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 public class Stock {
@@ -17,6 +14,9 @@ public class Stock {
     private long productId;
 
     private long quantity;
+
+    @Version
+    private long version;
 
     public Stock() {
 
