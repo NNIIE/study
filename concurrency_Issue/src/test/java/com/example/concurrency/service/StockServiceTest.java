@@ -4,7 +4,6 @@ import com.example.concurrency.domain.Stock;
 import com.example.concurrency.repository.StockRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,10 +18,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class StockServiceTest {
 
     @Autowired
+    private StockRepository stockRepository;
+
+    @Autowired
     private StockService stockService;
 
     @Autowired
-    private StockRepository stockRepository;
+    private PessimisticLockStockService pessimisticLockStockService;
 
     @BeforeEach
     public void before() {
@@ -52,6 +54,26 @@ class StockServiceTest {
             executorService.submit(() -> {
                 try {
                     stockService.decrease(1L, 1L);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
+        Stock stock = stockRepository.findById(1L).orElseThrow();
+        assertEquals(0L, stock.getQuantity());
+    }
+
+    @Test
+    public void pessimisticLock() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    pessimisticLockStockService.decrease(1L, 1L);
                 } finally {
                     latch.countDown();
                 }
